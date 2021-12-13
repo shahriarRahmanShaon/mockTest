@@ -22,6 +22,8 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import com.google.android.material.snackbar.Snackbar
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 
 import com.gun0912.tedpermission.PermissionListener
 import com.gun0912.tedpermission.normal.TedPermission
@@ -43,6 +45,7 @@ class MainActivity : AppCompatActivity() {
         var button1 = findViewById<Button>(R.id.button)
         var textj = findViewById<TextView>(R.id.textView)
          text2 = findViewById<TextView>(R.id.textView2)
+
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
 
@@ -108,7 +111,9 @@ class MainActivity : AppCompatActivity() {
                     if (!response.isSuccessful) throw IOException("Unexpected code $response")
                     var getString = response.body!!.string()
                     text2.setText(getString)
-                    Log.d("json", getString)
+                    var gson = GsonBuilder().create()
+                    var result =  gson.fromJson(getString, Welcome::class.java)
+                    Log.d("json", result.coord.toString())
 
                 }
             }
