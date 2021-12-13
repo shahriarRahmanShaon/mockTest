@@ -6,11 +6,13 @@ import android.content.pm.PackageManager
 import android.location.Address
 import android.location.Geocoder
 import android.location.Location
+import android.media.Image
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.app.ActivityCompat
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -21,6 +23,7 @@ import android.widget.Toast.LENGTH_SHORT
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import com.bumptech.glide.Glide
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
@@ -37,6 +40,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     var client = OkHttpClient()
     lateinit var text2: TextView
+    lateinit var imageView: ImageView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,7 +49,7 @@ class MainActivity : AppCompatActivity() {
         var button1 = findViewById<Button>(R.id.button)
         var textj = findViewById<TextView>(R.id.textView)
          text2 = findViewById<TextView>(R.id.textView2)
-
+        imageView = findViewById(R.id.imageView2)
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
 
@@ -65,7 +69,7 @@ class MainActivity : AppCompatActivity() {
             when {
                 ContextCompat.checkSelfPermission(
                     this,
-                    android.Manifest.permission.ACCESS_COARSE_LOCATION
+                    android.Manifest.permission.ACCESS_FINE_LOCATION
                 ) == PackageManager.PERMISSION_GRANTED -> {
                     // The permission is granted
                     // you can go with the flow that requires permission here
@@ -74,21 +78,25 @@ class MainActivity : AppCompatActivity() {
                             // Got last known location. In some rare situations this can be null.
                             var lat = location!!.latitude
                             var lon = location!!.longitude
+                            Log.d("json", lat.toString())
+                            Log.d("json", lon.toString())
                             var cityName = getAddress(lat, lon)
-                            textj.setText(cityName)
+                            runOnUiThread {
+                                textj.setText(cityName)
+                            }
                             getWeather(cityName)
                         }
                 }
-                shouldShowRequestPermissionRationale(android.Manifest.permission.ACCESS_COARSE_LOCATION) -> {
+                shouldShowRequestPermissionRationale(android.Manifest.permission.ACCESS_FINE_LOCATION) -> {
                     // This case means user previously denied the permission
                     // So here we can display an explanation to the user
                     // That why exactly we need this permission
                     Toast.makeText(this, "message", Toast.LENGTH_SHORT).show()
-                    requestPermissionLauncher.launch(android.Manifest.permission.ACCESS_COARSE_LOCATION)
+                    requestPermissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
                 }
                 else -> {
                     // Everything is fine you can simply request the permission
-                    requestPermissionLauncher.launch(android.Manifest.permission.ACCESS_COARSE_LOCATION)
+                    requestPermissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
                 }
             }
         }
@@ -110,15 +118,26 @@ class MainActivity : AppCompatActivity() {
                 response.use {
                     if (!response.isSuccessful) throw IOException("Unexpected code $response")
                     var getString = response.body!!.string()
-                    text2.setText(getString)
                     var gson = GsonBuilder().create()
                     var result =  gson.fromJson(getString, Welcome::class.java)
-                    Log.d("json", result.coord.toString())
+                    Log.d("json", result.weather[0].id.toString())
+                    runOnUiThread {
+                        text2.setText(result.main.temp.toString())
+                    }
 
+                    getBackground(result.weather[0].icon)
+                    Log.d("json", result.weather[0].icon)
                 }
             }
         })
 
+    }
+
+    private fun getBackground(iconId: String) {
+        var url = "https://openweathermap.org/img/wn/${iconId}@2x.png"
+        runOnUiThread {
+            Glide.with(this).load(url).into(imageView);
+        }
     }
 
     private fun getAddress(lat: Double, lng: Double): String {
